@@ -1,0 +1,58 @@
+version: '3.7'
+services:
+  swag:
+    image: ghcr.io/linuxserver/swag
+    container_name: swag
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Sao_Paulo
+      - URL=srvmail.nicoledepaula.adv.br
+      - SUBDOMAINS=
+      - VALIDATION=dns
+      - DNSPLUGIN=cloudflare
+      - EMAIL=halls510@hotmail.com
+      - CERTPROVIDER=zerossl
+    volumes:
+      - ./swag/config:/config
+      - ./swag/acme:/etc/acme.sh
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  mailcow:
+    image: mailcow/mailcow-dockerized
+    container_name: mailcow
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Sao_Paulo
+      - HOSTNAME=srvmail.nicoledepaula.adv.br
+      - MAILCOW_HOSTNAME=srvmail.nicoledepaula.adv.br
+      - MAILCOW_EMAIL=halls510@hotmail.com
+      - SOGO_WORKERS=1
+      - MAILCOW_SMTP_ONLY=false
+      - MAILCOW_DEBUG=false
+      - DBROOT=<dbrootpassword>
+      - DBMAIL=<dbmailpassword>
+      - RSPAMD_PASSWORD=<rspamdpassword>
+      - RSPAMD_CONTROL_PASSWORD=<rspamdcontrolpassword>
+      - ADDITIONAL_SAN=
+    volumes:
+      - ./mailcow/data:/var/lib/docker/volumes/mailcowdockerized_vmail/_data
+      - ./mailcow/mysql:/var/lib/docker/volumes/mailcowdockerized_mysql/_data
+      - ./mailcow/redis:/var/lib/docker/volumes/mailcowdockerized_redis/_data
+      - ./mailcow/sogo:/var/lib/docker/volumes/mailcowdockerized_sogo/_data
+      - ./mailcow/custom:/var/lib/docker/volumes/mailcowdockerized_custom:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - swag
+    networks:
+      - mailcow_network
+
+networks:
+  mailcow_network:
+    driver: bridge
